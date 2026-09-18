@@ -1,4 +1,4 @@
-function [x,flow] = solveKSDirV2(KS,len,N,h,init,Cs)
+function [x,flow] = stepKSDirichlet(KS,len,N,h,init,Cs)
 
 
 k  = KS.k;

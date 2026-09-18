@@ -1,10 +1,11 @@
-addpath('../src');
+repoRoot = fileparts(fileparts(mfilename('fullpath')));
+addpath(fullfile(repoRoot,'src'));
 
 config.L = 64;
 config.N = 128;
-config.dt = 0.1;
+config.dt = 0.01;
 config.steps = 100;
-config.initial = @(x) 0.5*sin(pi*x/config.L).*(1+0.3*sin(2*pi*x/config.L));
+config.initial = @(x) 0.5*sin(2*pi*x/config.L).*(1+0.3*sin(4*pi*x/config.L));
 
 figure;
 for j = 1:2

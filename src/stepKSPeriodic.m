@@ -1,4 +1,4 @@
-function [x,flow] = solveKSV2(KS,len,N,h,init,Cs)
+function [x,flow] = stepKSPeriodic(KS,len,N,h,init,Cs)
 
 % One timesetp for Periodic KS equation
 
