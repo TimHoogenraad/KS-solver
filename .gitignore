@@ -1,0 +1,8 @@
+.DS_Store
+*.asv
+*.mat
+*.fig
+*.png
+*.pdf
+*.eps
+output.txt
