@@ -165,7 +165,7 @@ state = sin(2*pi*x/L);
 coeff = buildETDRK4('periodic',L,N,dt,1,1);
 
 for step = 1:1000
-    [~,flow] = stepKSPeriodic(coeff,L,N,dt,state);
+    [~,flow] = stepKSPeriodic(coeff,L,N,state);
     state = flow(:,1);
 end
 ```
@@ -183,16 +183,17 @@ state = sin(pi*xInterior/L);
 coeff = buildETDRK4('dirichlet',L,N,dt,1,1);
 
 for step = 1:1000
-    [~,flow] = stepKSDirichlet(coeff,L,N,dt,state);
+    [~,flow] = stepKSDirichlet(coeff,L,N,state);
     state = flow(2:end-1,1);
 end
 ```
 
 The first column of `flow` is the new solution. Columns two through five are
 its first through fourth spatial derivatives. When `Cs` is supplied, column
-six contains the SGS viscosity. The `dt` passed to a step function must match
-the value used to build `coeff`; rebuild the coefficients before changing the
-time-step size.
+six contains the SGS viscosity. Both step functions accept an optional final
+`Cs` argument. The time-step size
+is stored in `coeff` when `buildETDRK4` is called. Rebuild the coefficients
+before changing the time-step size.
 
 ## Repository layout
 

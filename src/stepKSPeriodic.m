@@ -1,4 +1,4 @@
-function [x,flow] = stepKSPeriodic(KS,len,N,h,init,Cs)
+function [x,flow] = stepKSPeriodic(KS,len,N,init,Cs)
 
 % One timesetp for Periodic KS equation
 
@@ -19,7 +19,7 @@ f3 = KS.f3;
 g  = KS.g;
 
 
-if (nargin == 6) % LES
+if (nargin == 5) % LES
 
     % 1
     [Nvs, ~] = sgs(v,k,dx,Cs);

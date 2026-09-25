@@ -1,4 +1,4 @@
-function [x,flow] = stepKSDirichlet(KS,len,N,h,init,Cs)
+function [x,flow] = stepKSDirichlet(KS,len,N,init,Cs)
 
 
 k  = KS.k;
@@ -10,7 +10,7 @@ f2 = KS.f2;
 f3 = KS.f3;
 g  = KS.g;
 
-useSGS = (nargin == 6) && ~isempty(Cs);
+useSGS = (nargin == 5) && ~isempty(Cs);
 
 % ----- interior Dirichlet grid (what you return) -----
 dx = len/(N+1);

@@ -61,15 +61,15 @@ u(:,1) = initial;
 for j = 1:config.steps
     if strcmp(boundary,'periodic')
         if useSGS
-            [~,flow] = stepKSPeriodic(KS,config.L,N,config.dt,u(:,j),config.Cs);
+            [~,flow] = stepKSPeriodic(KS,config.L,N,u(:,j),config.Cs);
         else
-            [~,flow] = stepKSPeriodic(KS,config.L,N,config.dt,u(:,j));
+            [~,flow] = stepKSPeriodic(KS,config.L,N,u(:,j));
         end
     else
         if useSGS
-            [~,flow] = stepKSDirichlet(KS,config.L,N,config.dt,u(2:end-1,j),config.Cs);
+            [~,flow] = stepKSDirichlet(KS,config.L,N,u(2:end-1,j),config.Cs);
         else
-            [~,flow] = stepKSDirichlet(KS,config.L,N,config.dt,u(2:end-1,j));
+            [~,flow] = stepKSDirichlet(KS,config.L,N,u(2:end-1,j));
         end
     end
     u(:,j+1) = flow(:,1);
