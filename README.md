@@ -127,7 +127,10 @@ required for `u`.
 ## Included example
 
 The example script runs the same initial condition with both boundary types
-and plots the results side by side:
+from `t = 0` through `t = 500`. This includes the initial transient and a
+window of developed chaotic dynamics. It displays the solutions as stacked
+grayscale space-time surfaces using the lighting style of the original KS
+visualization code:
 
 ```matlab
 run('examples/compare_boundaries.m')
