@@ -100,26 +100,27 @@ required for `u`.
 ## Comparison and validation
 
 Run `examples/compare_boundaries.m` to apply the Quick Start parameters and
-initial condition to both boundary types. The script covers the transient and
-developed chaotic dynamics, then plots both histories with the original
-grayscale lit-surface style:
+initial condition to periodic, Dirichlet, and Dirichlet-with-advection cases.
+The advection case uses `c = 0.5`, matching the original project experiment.
+The script covers the transient and developed chaotic dynamics, then plots all
+three histories with the original grayscale lit-surface style:
 
 ```matlab
 run('examples/compare_boundaries.m')
 ```
 
-![Periodic and Dirichlet KS validation plots](docs/images/ks-boundary-validation.png)
+![KS boundary and advection validation plots](docs/images/ks-boundary-validation.png)
 
 The case was run with MATLAB R2026a and checked for the following properties:
 
-| Check | Periodic | Dirichlet |
-| --- | --- | --- |
-| Output size | `256 x 2001` | `258 x 2001` |
-| All values finite | Passed | Passed |
-| Boundary values remain zero | Not applicable | Passed exactly |
-| Initial-to-final state changes | Passed | Passed |
+| Check | Periodic | Dirichlet | Dirichlet, `c = 0.5` |
+| --- | --- | --- | --- |
+| Output size | `256 x 2001` | `258 x 2001` | `258 x 2001` |
+| All values finite | Passed | Passed | Passed |
+| Boundary values remain zero | Not applicable | Passed exactly | Passed exactly |
+| Initial-to-final state changes | Passed | Passed | Passed |
 
-The two panels use one symmetric color limit, so their amplitudes can be
+The three panels use one symmetric color limit, so their amplitudes can be
 compared directly. This test checks execution, output dimensions, boundary
 enforcement, and sustained dynamics. It is not a grid- or time-step-convergence
 study; quantitative work should still check convergence for its chosen
