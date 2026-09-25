@@ -9,12 +9,13 @@ The KS equation is a standard model for nonlinear pattern formation and
 spatiotemporal chaos. In the convention used here, it is
 
 ```text
-u_t + u u_x + v2 u_xx + v4 u_xxxx = 0.
+u_t + (u + c) u_x + v2 u_xx + v4 u_xxxx = 0.
 ```
 
 The second-derivative term destabilizes long waves, the fourth-derivative term
 damps short waves, and the nonlinear term transfers energy between scales. The
 default values are `v2 = 1` and `v4 = 1`.
+The constant advection speed `c` is optional and defaults to zero.
 
 ## Requirements
 
@@ -38,6 +39,7 @@ config.L = 128;       % Domain length
 config.N = 256;       % Number of grid points
 config.dt = 0.25;     % Time-step size
 config.steps = 2000;  % Integrate through t = 500
+% config.advection = 0.5;  % Optional constant c
 
 config.initial = @(x) 0.5*sin(2*pi*x/config.L) ...
     .* (1 + 0.3*sin(4*pi*x/config.L));
@@ -66,6 +68,7 @@ plots with a shared symmetric color scale.
 | `v2` | No | Coefficient of `u_xx`. Defaults to `1`. |
 | `v4` | No | Coefficient of `u_xxxx`. Defaults to `1`. |
 | `Cs` | No | Nonnegative subgrid-scale model coefficient. If omitted, the model is disabled. |
+| `advection` | No | Constant advection speed `c` in `(u+c)u_x`. Defaults to `0`. |
 
 For a periodic run, `N` must be even. The returned grid has `N` points at
 `L/N, 2L/N, ..., L`; `0` and `L` represent the same location, so only `L` is
@@ -135,6 +138,7 @@ exponential time-differencing Runge-Kutta method (ETDRK4) in time.
   domain of length `2L`. Odd symmetry keeps the values at `x = 0` and `x = L`
   equal to zero.
 - The optional `Cs` setting adds a subgrid-scale (SGS) viscosity model.
+- The optional `advection` setting adds the constant transport term `-c*u_x`.
 
 The implementation does not apply spectral dealiasing.
 
@@ -174,6 +178,8 @@ its first through fourth spatial derivatives. When `Cs` is supplied, column
 six contains the SGS viscosity. Both step functions accept an optional final
 `Cs` argument. The time-step size is stored in `coeff` when `buildETDRK4` is
 called; rebuild the coefficients before changing it.
+For a low-level advection run, pass the speed as the seventh argument:
+`buildETDRK4(boundary,L,N,dt,v2,v4,advection)`.
 
 ## Repository layout
 

@@ -1,7 +1,7 @@
 function [t,x,u] = solveKS(config)
 % Run the latest ETDRK4 KS stepper with periodic or Dirichlet boundaries.
 % Required fields: boundary, L, N, dt, steps, initial.
-% Optional fields: Cs, v2, v4 (defaults: no SGS, 1, 1).
+% Optional fields: Cs, v2, v4, advection (defaults: no SGS, 1, 1, 0).
 required = {'boundary','L','N','dt','steps','initial'};
 for j = 1:numel(required)
     if ~isfield(config, required{j})
@@ -28,8 +28,13 @@ end
 
 v2 = 1;
 v4 = 1;
+advection = 0;
 if isfield(config,'v2'), v2 = config.v2; end
 if isfield(config,'v4'), v4 = config.v4; end
+if isfield(config,'advection'), advection = config.advection; end
+if ~isscalar(advection) || ~isreal(advection) || ~isfinite(advection)
+    error('config.advection must be a finite real scalar');
+end
 useSGS = isfield(config,'Cs') && ~isempty(config.Cs);
 if useSGS && (~isscalar(config.Cs) || config.Cs < 0)
     error('config.Cs must be a nonnegative scalar');
@@ -54,7 +59,7 @@ if strcmp(boundary,'dirichlet')
     initial([1,end]) = 0;
 end
 
-KS = buildETDRK4(boundary, config.L, N, config.dt, v2, v4);
+KS = buildETDRK4(boundary, config.L, N, config.dt, v2, v4, advection);
 t = (0:config.steps)*config.dt;
 u = zeros(numel(x), config.steps+1);
 u(:,1) = initial;

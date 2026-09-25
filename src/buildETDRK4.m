@@ -1,7 +1,11 @@
-function KS = buildETDRK4(boundary, len, N, h, v2, v4)
+function KS = buildETDRK4(boundary, len, N, h, v2, v4, advection)
 % Coefficients used by the latest periodic and Dirichlet long-run solvers.
 if nargin < 5, v2 = 1; end
 if nargin < 6, v4 = 1; end
+if nargin < 7, advection = 0; end
+if ~isscalar(advection) || ~isreal(advection) || ~isfinite(advection)
+    error('advection must be a finite real scalar');
+end
 
 switch lower(char(boundary))
     case 'periodic'
@@ -34,4 +38,5 @@ KS.f1 = h*real(mean((-4-LR+exp(LR).*(4-3*LR+LR.^2))./LR.^3,2));
 KS.f2 = h*real(mean((2+LR+exp(LR).*(-2+LR))./LR.^3,2));
 KS.f3 = h*real(mean((-4-3*LR-LR.^2+exp(LR).*(4-LR))./LR.^3,2));
 KS.g = -0.5*v2*1i*k;
+KS.advection = advection;
 end

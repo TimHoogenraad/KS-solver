@@ -9,6 +9,7 @@ f1 = KS.f1;
 f2 = KS.f2;
 f3 = KS.f3;
 g  = KS.g;
+advection = KS.advection;
 
 useSGS = (nargin == 5) && ~isempty(Cs);
 
@@ -48,8 +49,7 @@ end
 % ---- main ETDRK4 loop  ----
 
     % 1
-    U  = real(ifft(v));
-    Nvl = g .* fft(U.^2);
+    Nvl = transportOdd(v,k,g,advection,N);
 
     if useSGS
         [Nvs, nu_full] = sgs_full(v,k,dxp,Cs);
@@ -60,8 +60,7 @@ end
     a = E2.*v + Q.*Nv;
 
     % 2
-    Ua  = real(ifft(a));
-    Nal = g .* fft(Ua.^2);
+    Nal = transportOdd(a,k,g,advection,N);
     if useSGS
         Nas = sgs_full(a,k,dxp,Cs);
         Na = Nal - Nas;
@@ -71,21 +70,19 @@ end
     b = E2.*v + Q.*Na;
 
     % 3
-    Ub  = real(ifft(b));
-    Nbl = g .* fft(Ub.^2);
+    Nbl = transportOdd(b,k,g,advection,N);
     if useSGS
         Nbs = sgs_full(b,k,dxp,Cs);
         Nb = Nbl - Nbs;
     else
         Nb = Nbl;
     end
-    c = E2.*a + Q.*(2*Nb - Nv);
+    stageC = E2.*a + Q.*(2*Nb - Nv);
 
     % 4
-    Uc  = real(ifft(c));
-    Ncl = g .* fft(Uc.^2);
+    Ncl = transportOdd(stageC,k,g,advection,N);
     if useSGS
-        Ncs = sgs_full(c,k,dxp,Cs);
+        Ncs = sgs_full(stageC,k,dxp,Cs);
         Nc = Ncl - Ncs;
     else
         Nc = Ncl;
@@ -115,6 +112,21 @@ else
     flow = [[0;U(2:N+1);0],u1(1:N+2),u2(1:N+2),u3(1:N+2),u4(1:N+2)];
 end
 
+end
+
+function nonlinear = transportOdd(v,k,g,advection,N)
+U = real(ifft(v));
+nonlinear = g .* fft(U.^2);
+
+if advection == 0
+    return
+end
+
+ux = real(ifft(1i.*k.*v));
+advectionTerm = zeros(size(U));
+advectionTerm(2:N+1) = -advection.*ux(2:N+1);
+advectionTerm(N+3:end) = -flipud(advectionTerm(2:N+1));
+nonlinear = nonlinear + fft(advectionTerm);
 end
 
 % -----------------------------

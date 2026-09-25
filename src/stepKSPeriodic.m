@@ -17,28 +17,29 @@ f1 = KS.f1;
 f2 = KS.f2;
 f3 = KS.f3;
 g  = KS.g;
+advection = KS.advection;
 
 
 if (nargin == 5) % LES
 
     % 1
     [Nvs, ~] = sgs(v,k,dx,Cs);
-    Nvl = g.*fft(real(ifft(v)).^2);
+    Nvl = transport(v,k,g,advection);
     Nv = Nvl - Nvs;
     a = E2.*v + Q.*Nv;
     % 2
     Nas = sgs(a,k,dx,Cs);
-    Nal = g.*fft(real(ifft(a)).^2);
+    Nal = transport(a,k,g,advection);
     Na = Nal - Nas;
     b = E2.*v + Q.*Na;
     % 3
     Nbs = sgs(b,k,dx,Cs);
-    Nbl = g.*fft(real(ifft(b)).^2);
+    Nbl = transport(b,k,g,advection);
     Nb = Nbl - Nbs;
-    c = E2.*a + Q.*(2*Nb-Nv);
+    stageC = E2.*a + Q.*(2*Nb-Nv);
     % 4
-    Ncs = sgs(c,k,dx,Cs);
-    Ncl = g.*fft(real(ifft(c)).^2);
+    Ncs = sgs(stageC,k,dx,Cs);
+    Ncl = transport(stageC,k,g,advection);
     Nc = Ncl - Ncs;
     v = E.*v + Nv.*f1 + 2*(Na+Nb).*f2 + Nc.*f3;
     %v(N/2+1) = 0;
@@ -57,13 +58,13 @@ if (nargin == 5) % LES
 
 else % DNS
 
-    Nv = g.*fft(real(ifft(v)).^2);
+    Nv = transport(v,k,g,advection);
     a = E2.*v + Q.*Nv;
-    Na = g.*fft(real(ifft(a)).^2);
+    Na = transport(a,k,g,advection);
     b = E2.*v + Q.*Na;
-    Nb = g.*fft(real(ifft(b)).^2);
-    c = E2.*a + Q.*(2*Nb-Nv);
-    Nc = g.*fft(real(ifft(c)).^2);
+    Nb = transport(b,k,g,advection);
+    stageC = E2.*a + Q.*(2*Nb-Nv);
+    Nc = transport(stageC,k,g,advection);
     v = E.*v + Nv.*f1 + 2*(Na+Nb).*f2 + Nc.*f3;
     %v(N/2+1) = 0;
     % Return to real space and save solution
@@ -77,6 +78,11 @@ else % DNS
 
 end
 
+end
+
+function N = transport(v,k,g,advection)
+u = real(ifft(v));
+N = g.*fft(u.^2) - advection.*(1i.*k).*v;
 end
 
 function [Ns,nu] = sgs(v,k,delta,Cs)
