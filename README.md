@@ -1,129 +1,205 @@
 # Kuramoto-Sivashinsky solver
 
-This MATLAB repository solves the one-dimensional Kuramoto-Sivashinsky (KS)
-equation with either periodic or homogeneous Dirichlet boundary conditions.
-Set `config.boundary` to choose between them. The code uses the Fourier
-spectral ETDRK4 methods from the newest periodic and Dirichlet long-run
-workflows in `KS_cont`.
+A small MATLAB solver for the one-dimensional Kuramoto-Sivashinsky (KS)
+equation. It supports periodic boundaries and zero-valued (homogeneous
+Dirichlet) boundaries, and returns the complete solution history for plotting
+or analysis.
 
-The package contains the solver only. It does not include the original
-long-run analysis, pQoI or refinement code, figures, or generated `.mat` data.
+The KS equation is a standard model for nonlinear pattern formation and
+spatiotemporal chaos. In the convention used here, it is
 
-## Repository contents
+```text
+u_t + u u_x + v2 u_xx + v4 u_xxxx = 0.
+```
 
-| File | Purpose |
-| --- | --- |
-| `src/solveKS.m` | Main entry point. Checks settings, builds the grid, advances the solution, and returns the full history. |
-| `src/buildETDRK4.m` | Precomputes Fourier wave numbers and ETDRK4 coefficients for the selected boundary condition. |
-| `src/stepKSPeriodic.m` | One periodic ETDRK4 step, with an optional subgrid-scale (SGS) term. |
-| `src/stepKSDirichlet.m` | One Dirichlet ETDRK4 step, using an odd extension on a doubled periodic domain; optional SGS term. |
-| `examples/compare_boundaries.m` | Runs and plots a short case with each boundary condition. |
-| `.gitignore` | Excludes generated MATLAB data, figures, and autosave files. |
-
-`solveKS` is the normal way to run a case. The `stepKS*` functions are useful
-when writing a long-running driver that manages its own output and avoids
-keeping every state in memory.
+The second-derivative term destabilizes long waves, the fourth-derivative term
+damps short waves, and the nonlinear term transfers energy between scales. The
+default values are `v2 = 1` and `v4 = 1`.
 
 ## Requirements
 
-MATLAB with `fft` and `ifft`. No additional toolbox is used by the solver.
-From MATLAB, add the `src` directory to the path:
+- MATLAB
+- No additional MATLAB toolboxes
+
+Clone or download this repository, start MATLAB, and change to the repository
+directory. Add the solver to the MATLAB path:
 
 ```matlab
-addpath('/path/to/ks-solver/src')
+addpath('src')
 ```
 
 ## Quick start
 
+Create a configuration structure and pass it to `solveKS`:
+
 ```matlab
-config.boundary = 'periodic'; % change to 'dirichlet' for zero endpoints
-config.L = 64;
-config.N = 128;
-config.dt = 0.01;
-config.steps = 100;
+config.boundary = 'periodic';
+config.L = 64;       % Domain length
+config.N = 128;      % Number of grid points
+config.dt = 0.01;    % Time-step size
+config.steps = 100;  % Number of time steps
+
 config.initial = @(x) 0.5*sin(2*pi*x/config.L) ...
     .* (1 + 0.3*sin(4*pi*x/config.L));
 
 [t,x,u] = solveKS(config);
-imagesc(t,x,u); axis xy; xlabel('Time'); ylabel('x');
+
+imagesc(t,x,u)
+axis xy
+xlabel('Time')
+ylabel('x')
+colorbar
 ```
 
-To run the included comparison from the repository root:
+Here, `u(i,j)` is the solution at position `x(i)` and time `t(j)`. The first
+column, `u(:,1)`, contains the initial condition.
+
+## Boundary conditions
+
+Set `config.boundary` to one of the following values:
+
+| Value | Meaning | Grid size returned in `x` |
+| --- | --- | --- |
+| `'periodic'` | The left and right sides of the domain connect. | `N` |
+| `'dirichlet'` | The solution is fixed to zero at `x = 0` and `x = L`. | `N + 2` |
+
+For a periodic run, `N` must be even. The grid contains
+`L/N, 2L/N, ..., L`; the points at `0` and `L` represent the same periodic
+location, so only `L` is stored.
+
+For a Dirichlet run, `N` is the number of interior points. The returned grid
+also includes the two boundary points, giving `N + 2` values in total. The
+solver sets both endpoint values to zero, including in the initial condition.
+
+To switch the quick-start example to zero-valued boundaries, change only:
+
+```matlab
+config.boundary = 'dirichlet';
+```
+
+## Configuration reference
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `boundary` | Yes | Either `'periodic'` or `'dirichlet'`. |
+| `L` | Yes | Positive domain length. |
+| `N` | Yes | Periodic grid points, or Dirichlet interior grid points. Must be an integer of at least 2; periodic runs require an even value. |
+| `dt` | Yes | Positive time-step size. |
+| `steps` | Yes | Nonnegative integer number of time steps. |
+| `initial` | Yes | Function handle evaluated on `x`, or a numeric vector with one value for each returned grid point. |
+| `v2` | No | Coefficient of `u_xx`. Defaults to `1`. |
+| `v4` | No | Coefficient of `u_xxxx`. Defaults to `1`. |
+| `Cs` | No | Nonnegative subgrid-scale model coefficient. If omitted, the model is disabled. |
+
+When `initial` is a function handle, it must accept the grid vector and return
+one value per grid point. For example:
+
+```matlab
+config.initial = @(x) sin(2*pi*x/config.L);
+```
+
+A numeric initial condition is also accepted:
+
+```matlab
+x0 = config.L*(1:config.N)'/config.N;  % Periodic grid
+config.initial = sin(2*pi*x0/config.L);
+```
+
+For a Dirichlet run, a numeric initial condition must contain `N + 2` values,
+including the two endpoints. Any nonzero endpoint values are replaced by zero.
+
+## Outputs
+
+```matlab
+[t,x,u] = solveKS(config);
+```
+
+| Output | Shape | Description |
+| --- | --- | --- |
+| `t` | `1 x (steps + 1)` | Times from `0` through `steps*dt`. |
+| `x` | `N x 1` or `(N + 2) x 1` | Spatial grid. |
+| `u` | `numel(x) x (steps + 1)` | Complete solution history. |
+
+Because `solveKS` stores every state, memory use grows with both `N` and
+`steps`. For example, doubling either value approximately doubles the memory
+required for `u`.
+
+## Included example
+
+The example script runs the same initial condition with both boundary types
+and plots the results side by side:
 
 ```matlab
 run('examples/compare_boundaries.m')
 ```
 
-The example finds `src` relative to its own location, so it also works when
-launched from another MATLAB working directory with an absolute script path.
+The script locates `src` automatically, even when it is launched from another
+MATLAB working directory using its absolute path.
 
-## Settings
+## Numerical method
 
-| Field | Meaning |
-| --- | --- |
-| `boundary` | Required: `'periodic'` or `'dirichlet'`. |
-| `L` | Required: domain length, a positive number. |
-| `N` | Required: periodic grid points (must be even), or Dirichlet **interior** grid points. |
-| `dt` | Required: positive time-step size. |
-| `steps` | Required: nonnegative integer number of time steps. |
-| `initial` | Required: function of `x`, or a vector with one value per returned grid point. |
-| `Cs` | Optional: nonnegative SGS coefficient. Omit it for a DNS-style run. |
-| `v2`, `v4` | Optional: linear coefficients; both default to `1`, matching the latest long-run scripts. |
+The solver uses a Fourier spectral discretization in space and the fourth-order
+exponential time-differencing Runge-Kutta method (ETDRK4) in time.
 
-The returned `t` is a row vector of length `steps+1`; `u(:,j)` is the solution
-at `t(j)`. The returned `x` is a column vector. With periodic boundaries, it
-has `N` points at `L/N, 2L/N, ..., L`; it includes `L` but not `0`, following
-the source implementation. With Dirichlet boundaries, it has `N+2` points
-including `0` and `L`. The two endpoint values are set to zero, including at
-the initial time. A numeric `initial` vector must match this returned grid.
+- Periodic solutions are advanced directly on a Fourier grid.
+- Dirichlet solutions are represented by an odd extension onto a periodic
+  domain of length `2L`. Odd symmetry keeps the values at `x = 0` and `x = L`
+  equal to zero.
+- The optional `Cs` setting adds a subgrid-scale (SGS) viscosity model.
 
-`solveKS` stores all states in RAM. The memory for `u` grows with both `N`
-and `steps`. For a long simulation, use the lower-level step functions and
-save or analyze states incrementally.
+The implementation does not apply spectral dealiasing. Choose `N` and `dt`
+carefully and check convergence when using the solver for quantitative work.
 
-For example, this advances a periodic state without building a history array:
+## Advanced use: stepping without storing every state
+
+For long simulations, use the lower-level functions to process or save each
+state as it is produced. This periodic example keeps only the current state:
 
 ```matlab
-L = 64; N = 128; dt = 0.01;
+L = 64;
+N = 128;
+dt = 0.01;
+
 x = L*(1:N)'/N;
 state = sin(2*pi*x/L);
 coeff = buildETDRK4('periodic',L,N,dt,1,1);
-for j = 1:1000
+
+for step = 1:1000
     [~,flow] = stepKSPeriodic(coeff,L,N,dt,state);
     state = flow(:,1);
 end
 ```
 
-For Dirichlet, call `buildETDRK4('dirichlet',L,N,dt,1,1)` and
-`stepKSDirichlet(coeff,L,N,dt,state)`, where `state` has `N` interior values.
-For the next step, set `state = flow(2:end-1,1)` to drop the returned endpoints.
-Both step functions accept an optional final `Cs` argument. The `h` argument
-in a step call must equal the `dt` used to build `coeff`; the original step
-functions take it for interface compatibility, while the precomputed
-coefficients determine the actual step size.
+For Dirichlet boundaries, the state passed to `stepKSDirichlet` contains only
+the `N` interior values. Its output includes both zero endpoints:
 
-## Numerical method and provenance
+```matlab
+L = 64;
+N = 128;
+dt = 0.01;
 
-Both branches use ETDRK4 with a Fourier spectral spatial representation.
-Periodic runs advance the field directly on a periodic grid. Dirichlet runs
-oddly extend the interior field onto a domain of length `2L`, advance that
-field, and enforce zero-valued endpoints after each step. The optional SGS
-term is retained from the source functions.
+xInterior = (1:N)'*L/(N+1);
+state = sin(pi*xInterior/L);
+coeff = buildETDRK4('dirichlet',L,N,dt,1,1);
 
-`stepKSPeriodic.m` and `stepKSDirichlet.m` are the functions formerly named
-`solveKSV2.m` and `solveKSDirV2.m` in `KS_cont/functions`. Their numerical
-bodies were preserved; only the function and file names changed. The ETDRK4
-coefficient formulas came from `FullRunPeriodic_V2.m` and
-`FullRunDirichlet_V2.m`. Those source scripts create a dealiasing mask, but
-their step functions never apply it. This package therefore does not claim
-dealiasing.
+for step = 1:1000
+    [~,flow] = stepKSDirichlet(coeff,L,N,dt,state);
+    state = flow(2:end-1,1);
+end
+```
 
-The lower-level step functions return `[x,flow]`. The first column of `flow`
-is the new field; the next four are spatial derivatives of orders one through
-four. When `Cs` is supplied, column six is the SGS viscosity. For periodic
-runs, `flow` has `N` rows. For Dirichlet runs, it has `N+2` rows with endpoints.
-The high-level `solveKS` function returns only the field history.
+The first column of `flow` is the new solution. Columns two through five are
+its first through fourth spatial derivatives. When `Cs` is supplied, column
+six contains the SGS viscosity. The `dt` passed to a step function must match
+the value used to build `coeff`; rebuild the coefficients before changing the
+time-step size.
 
-Short periodic and Dirichlet runs, both with and without SGS, were checked
-with MATLAB R2026a. The checks covered output dimensions, finite values,
-and zero Dirichlet endpoints.
+## Repository layout
+
+| Path | Purpose |
+| --- | --- |
+| `src/solveKS.m` | Main interface for configuring and running a simulation. |
+| `src/buildETDRK4.m` | Builds the spectral grid and ETDRK4 coefficients. |
+| `src/stepKSPeriodic.m` | Advances a periodic solution by one time step. |
+| `src/stepKSDirichlet.m` | Advances a Dirichlet solution by one time step. |
+| `examples/compare_boundaries.m` | Compares the two boundary conditions. |
