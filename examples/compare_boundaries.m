@@ -24,23 +24,11 @@ layout = tiledlayout(2,1,'TileSpacing','compact','Padding','compact');
 
 for j = 1:2
     ax = nexttile(layout);
-    surf(ax,t,grids{j},solutions{j});
-    shading(ax,'interp');
-    lighting(ax,'gouraud');
-    axis(ax,'tight');
-    view(ax,2);
-    zlim(ax,[-50 500]);
-    clim(ax,[-limit limit]);
-    colormap(ax,gray(256));
-    material(ax,[0.30 0.60 0.60 40.00 1.00]);
-    light(ax,'Position',[0,0,2],'Style','infinite');
-    title(ax,titles{j});
-    ylabel(ax,'x/L');
-    yticks(ax,[0 32 64 96 128]);
-    yticklabels(ax,{'0','1/4','1/2','3/4','1'});
-    ylim(ax,[0 config.L]);
-    set(ax,'Layer','top','TickDir','out','FontSize',11);
+    plotKSSpacetime(t,grids{j},solutions{j}, ...
+        'Parent',ax, ...
+        'DomainLength',config.L, ...
+        'ColorLimit',limit, ...
+        'Title',titles{j});
 end
 
-xlabel(nexttile(layout,2),'Time');
 sgtitle(layout,'Kuramoto-Sivashinsky transient and chaotic dynamics');

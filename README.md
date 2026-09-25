@@ -139,6 +139,17 @@ run('examples/compare_boundaries.m')
 The script locates `src` automatically, even when it is launched from another
 MATLAB working directory using its absolute path.
 
+The same original-style visualization can be used for any solution returned
+by `solveKS`:
+
+```matlab
+plotKSSpacetime(t,x,u,'DomainLength',config.L,'Title','Periodic')
+```
+
+`plotKSSpacetime` creates a figure by default. Use the optional `Parent` value
+to draw into an existing axes, or `ColorLimit` to give several plots the same
+symmetric color scale.
+
 ## Numerical method
 
 The solver uses a Fourier spectral discretization in space and the fourth-order
@@ -206,4 +217,5 @@ before changing the time-step size.
 | `src/buildETDRK4.m` | Builds the spectral grid and ETDRK4 coefficients. |
 | `src/stepKSPeriodic.m` | Advances a periodic solution by one time step. |
 | `src/stepKSDirichlet.m` | Advances a Dirichlet solution by one time step. |
+| `src/plotKSSpacetime.m` | Plots a solution with the original grayscale lit-surface style. |
 | `examples/compare_boundaries.m` | Compares the two boundary conditions. |
