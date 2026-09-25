@@ -49,38 +49,17 @@ plotKSSpacetime(t,x,u, ...
 ```
 
 Here, `u(i,j)` is the solution at position `x(i)` and time `t(j)`. The first
-column, `u(:,1)`, contains the initial condition.
+column, `u(:,1)`, contains the initial condition. `plotKSSpacetime` creates a
+figure by default; its optional `Parent` and `ColorLimit` values support tiled
+plots with a shared symmetric color scale.
 
-## Boundary conditions
-
-Set `config.boundary` to one of the following values:
-
-| Value | Meaning | Grid size returned in `x` |
-| --- | --- | --- |
-| `'periodic'` | The left and right sides of the domain connect. | `N` |
-| `'dirichlet'` | The solution is fixed to zero at `x = 0` and `x = L`. | `N + 2` |
-
-For a periodic run, `N` must be even. The grid contains
-`L/N, 2L/N, ..., L`; the points at `0` and `L` represent the same periodic
-location, so only `L` is stored.
-
-For a Dirichlet run, `N` is the number of interior points. The returned grid
-also includes the two boundary points, giving `N + 2` values in total. The
-solver sets both endpoint values to zero, including in the initial condition.
-
-To switch the quick-start example to zero-valued boundaries, change only:
-
-```matlab
-config.boundary = 'dirichlet';
-```
-
-## Configuration reference
+## Configuration and grids
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `boundary` | Yes | Either `'periodic'` or `'dirichlet'`. |
+| `boundary` | Yes | `'periodic'` connects both sides; `'dirichlet'` fixes `u(0) = u(L) = 0`. |
 | `L` | Yes | Positive domain length. |
-| `N` | Yes | Periodic grid points, or Dirichlet interior grid points. Must be an integer of at least 2; periodic runs require an even value. |
+| `N` | Yes | Spatial point count; its boundary-specific meaning is described below. |
 | `dt` | Yes | Positive time-step size. |
 | `steps` | Yes | Nonnegative integer number of time steps. |
 | `initial` | Yes | Function handle evaluated on `x`, or a numeric vector with one value for each returned grid point. |
@@ -88,28 +67,22 @@ config.boundary = 'dirichlet';
 | `v4` | No | Coefficient of `u_xxxx`. Defaults to `1`. |
 | `Cs` | No | Nonnegative subgrid-scale model coefficient. If omitted, the model is disabled. |
 
-When `initial` is a function handle, it must accept the grid vector and return
-one value per grid point. For example:
+For a periodic run, `N` must be even. The returned grid has `N` points at
+`L/N, 2L/N, ..., L`; `0` and `L` represent the same location, so only `L` is
+stored. For a Dirichlet run, `N` counts interior points and the returned grid
+adds both endpoints, giving `N + 2` values.
 
-```matlab
-config.initial = @(x) sin(2*pi*x/config.L);
-```
-
-A numeric initial condition is also accepted:
+A numeric initial condition can be supplied instead of a function handle:
 
 ```matlab
 x0 = config.L*(1:config.N)'/config.N;  % Periodic grid
 config.initial = sin(2*pi*x0/config.L);
 ```
 
-For a Dirichlet run, a numeric initial condition must contain `N + 2` values,
-including the two endpoints. Any nonzero endpoint values are replaced by zero.
+For a Dirichlet run, the numeric vector must contain `N + 2` values. The
+solver replaces nonzero endpoint values with zero.
 
 ## Outputs
-
-```matlab
-[t,x,u] = solveKS(config);
-```
 
 | Output | Shape | Description |
 | --- | --- | --- |
@@ -121,38 +94,16 @@ Because `solveKS` stores every state, memory use grows with both `N` and
 `steps`. For example, doubling either value approximately doubles the memory
 required for `u`.
 
-## Included example
+## Comparison and validation
 
-The example script runs the same initial condition with both boundary types
-from `t = 0` through `t = 500`. This includes the initial transient and a
-window of developed chaotic dynamics. It displays the solutions as stacked
-grayscale space-time surfaces using the lighting style of the original KS
-visualization code:
+Run `examples/compare_boundaries.m` to apply the Quick Start parameters and
+initial condition to both boundary types. The script covers the transient and
+developed chaotic dynamics, then plots both histories with the original
+grayscale lit-surface style:
 
 ```matlab
 run('examples/compare_boundaries.m')
 ```
-
-The script locates `src` automatically, even when it is launched from another
-MATLAB working directory using its absolute path.
-
-The same original-style visualization can be used for any solution returned
-by `solveKS`:
-
-```matlab
-plotKSSpacetime(t,x,u,'DomainLength',config.L,'Title','Periodic')
-```
-
-`plotKSSpacetime` creates a figure by default. Use the optional `Parent` value
-to draw into an existing axes, or `ColorLimit` to give several plots the same
-symmetric color scale.
-
-## Validation plots
-
-The comparison example is also the repository's behavioral validation case.
-It runs both boundary conditions with `L = 128`, `N = 256`, `dt = 0.25`, and
-`2000` steps. Both cases start from the same function, cover the initial
-transient, and continue through developed chaotic dynamics.
 
 ![Periodic and Dirichlet KS validation plots](docs/images/ks-boundary-validation.png)
 
@@ -171,12 +122,8 @@ enforcement, and sustained dynamics. It is not a grid- or time-step-convergence
 study; quantitative work should still check convergence for its chosen
 parameters.
 
-The committed image is exported at 400 DPI. To reproduce the simulation and
-plot interactively, run:
-
-```matlab
-run('examples/compare_boundaries.m')
-```
+The committed image is exported at 400 DPI. The script locates `src` relative
+to its own path, including when launched by absolute path.
 
 ## Numerical method
 
@@ -189,8 +136,7 @@ exponential time-differencing Runge-Kutta method (ETDRK4) in time.
   equal to zero.
 - The optional `Cs` setting adds a subgrid-scale (SGS) viscosity model.
 
-The implementation does not apply spectral dealiasing. Choose `N` and `dt`
-carefully and check convergence when using the solver for quantitative work.
+The implementation does not apply spectral dealiasing.
 
 ## Advanced use: stepping without storing every state
 
@@ -198,9 +144,7 @@ For long simulations, use the lower-level functions to process or save each
 state as it is produced. This periodic example keeps only the current state:
 
 ```matlab
-L = 64;
-N = 128;
-dt = 0.01;
+L = 64; N = 128; dt = 0.01;
 
 x = L*(1:N)'/N;
 state = sin(2*pi*x/L);
@@ -212,14 +156,9 @@ for step = 1:1000
 end
 ```
 
-For Dirichlet boundaries, the state passed to `stepKSDirichlet` contains only
-the `N` interior values. Its output includes both zero endpoints:
+For Dirichlet boundaries, replace the grid, state, coefficients, and loop with:
 
 ```matlab
-L = 64;
-N = 128;
-dt = 0.01;
-
 xInterior = (1:N)'*L/(N+1);
 state = sin(pi*xInterior/L);
 coeff = buildETDRK4('dirichlet',L,N,dt,1,1);
@@ -234,8 +173,7 @@ The first column of `flow` is the new solution. Columns two through five are
 its first through fourth spatial derivatives. When `Cs` is supplied, column
 six contains the SGS viscosity. Both step functions accept an optional final
 `Cs` argument. The time-step size is stored in `coeff` when `buildETDRK4` is
-called. Rebuild the coefficients
-before changing the time-step size.
+called; rebuild the coefficients before changing it.
 
 ## Repository layout
 
