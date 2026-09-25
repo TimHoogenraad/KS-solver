@@ -34,21 +34,18 @@ Create a configuration structure and pass it to `solveKS`:
 
 ```matlab
 config.boundary = 'periodic';
-config.L = 64;       % Domain length
-config.N = 128;      % Number of grid points
-config.dt = 0.01;    % Time-step size
-config.steps = 100;  % Number of time steps
+config.L = 128;       % Domain length
+config.N = 256;       % Number of grid points
+config.dt = 0.25;     % Time-step size
+config.steps = 2000;  % Integrate through t = 500
 
 config.initial = @(x) 0.5*sin(2*pi*x/config.L) ...
     .* (1 + 0.3*sin(4*pi*x/config.L));
 
 [t,x,u] = solveKS(config);
-
-imagesc(t,x,u)
-axis xy
-xlabel('Time')
-ylabel('x')
-colorbar
+plotKSSpacetime(t,x,u, ...
+    'DomainLength',config.L, ...
+    'Title','Periodic');
 ```
 
 Here, `u(i,j)` is the solution at position `x(i)` and time `t(j)`. The first
@@ -150,6 +147,37 @@ plotKSSpacetime(t,x,u,'DomainLength',config.L,'Title','Periodic')
 to draw into an existing axes, or `ColorLimit` to give several plots the same
 symmetric color scale.
 
+## Validation plots
+
+The comparison example is also the repository's behavioral validation case.
+It runs both boundary conditions with `L = 128`, `N = 256`, `dt = 0.25`, and
+`2000` steps. Both cases start from the same function, cover the initial
+transient, and continue through developed chaotic dynamics.
+
+![Periodic and Dirichlet KS validation plots](docs/images/ks-boundary-validation.png)
+
+The case was run with MATLAB R2026a and checked for the following properties:
+
+| Check | Periodic | Dirichlet |
+| --- | --- | --- |
+| Output size | `256 x 2001` | `258 x 2001` |
+| All values finite | Passed | Passed |
+| Boundary values remain zero | Not applicable | Passed exactly |
+| Initial-to-final state changes | Passed | Passed |
+
+The two panels use one symmetric color limit, so their amplitudes can be
+compared directly. This test checks execution, output dimensions, boundary
+enforcement, and sustained dynamics. It is not a grid- or time-step-convergence
+study; quantitative work should still check convergence for its chosen
+parameters.
+
+The committed image is exported at 400 DPI. To reproduce the simulation and
+plot interactively, run:
+
+```matlab
+run('examples/compare_boundaries.m')
+```
+
 ## Numerical method
 
 The solver uses a Fourier spectral discretization in space and the fourth-order
@@ -205,8 +233,8 @@ end
 The first column of `flow` is the new solution. Columns two through five are
 its first through fourth spatial derivatives. When `Cs` is supplied, column
 six contains the SGS viscosity. Both step functions accept an optional final
-`Cs` argument. The time-step size
-is stored in `coeff` when `buildETDRK4` is called. Rebuild the coefficients
+`Cs` argument. The time-step size is stored in `coeff` when `buildETDRK4` is
+called. Rebuild the coefficients
 before changing the time-step size.
 
 ## Repository layout

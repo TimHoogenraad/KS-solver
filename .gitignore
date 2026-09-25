@@ -3,6 +3,7 @@
 *.mat
 *.fig
 *.png
+!docs/images/*.png
 *.pdf
 *.eps
 output.txt
